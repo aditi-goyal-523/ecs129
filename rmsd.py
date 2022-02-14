@@ -17,6 +17,28 @@ def rmsd(v1, v2):
 	
 	return math.sqrt(sum_edistance_sqd/len(v1))	# the RMSD
 
+def AL(vec):
+	vec = [0, vec[0], vec[1], vec[2]]
+	al = [[0 for i in range(4)] for j in range(4)]
+	
+	al[0][0] = vec[0]; al[0][1] = -vec[1]; al[0][2] = -vec[2]; al[0][3] = -vec[3]
+	al[1][0] = vec[1]; al[1][1] =  vec[0]; al[1][2] = -vec[3]; al[1][3] =  vec[2]
+	al[2][0] = vec[2]; al[2][1] =  vec[3]; al[2][2] =  vec[0]; al[2][3] = -vec[1]
+	al[3][0] = vec[3]; al[3][1] = -vec[2]; al[3][2] =  vec[1]; al[3][3] =  vec[0]
+	
+	return np.array(al)
+	
+def AR(vec):
+	vec = [0, vec[0], vec[1], vec[2]]
+	ar = [[0 for i in range(4)] for j in range(4)]
+	
+	ar[0][0] = vec[0]; ar[0][1] = -vec[1]; ar[0][2] = -vec[2]; ar[0][3] = -vec[3]
+	ar[1][0] = vec[1]; ar[1][1] =  vec[0]; ar[1][2] =  vec[3]; ar[1][3] = -vec[2]
+	ar[2][0] = vec[2]; ar[2][1] = -vec[3]; ar[2][2] =  vec[0]; ar[2][3] =  vec[1]
+	ar[3][0] = vec[3]; ar[3][1] =  vec[2]; ar[3][2] = -vec[1]; ar[3][3] =  vec[0]
+	
+	return np.array(ar)
+
 # Matrices initialization
 tar_vecs = []
 with open(arg.tar, 'r') as fh:
@@ -61,42 +83,24 @@ mod_vecs = mod_vecs - mod_bc
 post_translation_rmsd = rmsd(tar_vecs, mod_vecs)
 print(f'post-translation RMSD: {post_translation_rmsd:.3f}')
 
-# get R from SVD
-product = np.transpose(mod_vecs) @ tar_vecs
-u, s, vh = np.linalg.svd(product)
-R = vh.T * u.T
+# get F
+F = np.array([[0.0 for i in range(4)] for j in range(4)])
 
-# get fancy F in terms of the matrix elements of fancy R for quaternion algorithm
-F = [[0 for i in range(4)] for j in range(4)]
-F[0][0] = R[0][0] + R[1][1] + R[2][2]
-F[0][1] = R[1][2] - R[2][1]
-F[0][2] = R[2][0] - R[0][2]
-F[0][3] = R[0][1] - R[1][0]
-F[1][0] = R[1][2] - R[2][1]
-F[1][1] = R[0][0] - R[1][1] - R[2][2]
-F[1][2] = R[0][1] + R[1][0]
-F[1][3] = R[0][2] + R[2][0]
-F[2][0] = R[2][0] - R[0][2]
-F[2][1] = R[0][1] + R[1][0]
-F[2][2] =-R[0][0] + R[1][1] - R[2][2]
-F[2][3] = R[1][2] + R[2][1]
-F[3][0] = R[0][1] - R[1][0]
-F[3][1] = R[0][2] + R[2][0]
-F[3][2] = R[1][2] + R[2][1]
-F[3][3] =-R[0][0] - R[1][1] + R[2][2]
+for i in range(prolen):
+	F -= np.matmul(AL(tar_vecs[i]),AR(mod_vecs[i])) / prolen
 
-F = np.array(F)
-eigen_val, eigen_vec = np.linalg.eig(F)
-eigen_max = max(eigen_val)
+# get RMSD
+eigen_val, eigen_vec = np.linalg.eig(F) # Get eigenvalues and eigenvectors of F
+eigen_max = max(eigen_val) # Get maximum eigenvalue of F
 	
 e_sqrd = 0
 for i in range(prolen):
 	e_sqrd = np.dot(tar_vecs[i],tar_vecs[i]) + np.dot(mod_vecs[i],mod_vecs[i]) - (2 * eigen_max)
 
 e_sqrd = e_sqrd/prolen
+#print(e_sqrd)
 
 e = math.sqrt(e_sqrd) 
 
-print(f'post-transformation RMSD: {e:.3f}') 
-
+print(f'post-transformation RMSD: {e:.3f}')
 
