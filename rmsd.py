@@ -95,10 +95,7 @@ eigen_max = max(eigen_val) # Get maximum eigenvalue of F
 	
 e_sqrd = 0
 for i in range(prolen):
-	e_sqrd = np.dot(tar_vecs[i],tar_vecs[i]) + np.dot(mod_vecs[i],mod_vecs[i]) - (2 * eigen_max)
-
-e_sqrd = e_sqrd/prolen
-#print(e_sqrd)
+	e_sqrd += (np.dot(tar_vecs[i],tar_vecs[i]) + np.dot(mod_vecs[i],mod_vecs[i]) - (2 * eigen_max)) / prolen
 
 e = math.sqrt(e_sqrd) 
 
