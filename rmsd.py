@@ -2,6 +2,7 @@ import argparse
 import math
 import numpy as np
 
+# INITIALIZATION
 parser = argparse.ArgumentParser(description='Compare protein structures through RMSD (root mean squared deviation) using quaternion')
 parser.add_argument('--tar', type=str,
 	metavar='<pdb>', help='path to target (standard) protein structure')
@@ -9,6 +10,7 @@ parser.add_argument('--mod', type=str,
 	metavar='<pdb>', help='path to model (predicted) protein structure')
 arg = parser.parse_args()
 
+# Define necessary functions
 def rmsd(v1, v2):
 	sum_edistance_sqd = 0
 	for i in range(len(v1)):
@@ -39,7 +41,7 @@ def AR(vec):
 	
 	return np.array(ar)
 
-# Matrices initialization
+# Read and parse pdb files
 tar_vecs = []
 with open(arg.tar, 'r') as fh:
 	lines = fh.readlines()
@@ -72,6 +74,8 @@ mod_vecs = np.array(mod_vecs)
 preopt_rmsd = rmsd(tar_vecs, mod_vecs)
 print(f'pre-optimization RMSD: {preopt_rmsd:.3f}')
 
+#LINEAR TRANSLATION
+
 # Get barycenters of target and model vectors.... Can put into a function
 tar_bc = np.mean(tar_vecs, axis=0)
 mod_bc = np.mean(mod_vecs, axis=0)
@@ -83,13 +87,13 @@ mod_vecs = mod_vecs - mod_bc
 post_translation_rmsd = rmsd(tar_vecs, mod_vecs)
 print(f'post-translation RMSD: {post_translation_rmsd:.3f}')
 
-# get F
+# GET LEAST RMSD
+
 F = np.array([[0.0 for i in range(4)] for j in range(4)])
 
 for i in range(prolen):
 	F -= np.matmul(AL(tar_vecs[i]),AR(mod_vecs[i])) / prolen
 
-# get RMSD
 eigen_val, eigen_vec = np.linalg.eig(F) # Get eigenvalues and eigenvectors of F
 eigen_max = max(eigen_val) # Get maximum eigenvalue of F
 	
